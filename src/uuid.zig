@@ -1,7 +1,11 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-pub const Error = error{InvalidUUID};
+// pub const Error = error{InvalidUUID};
+// pub const Error = error{
+//     InvalidCharacter,
+//     InvalidEnumTag,
+// };
 pub const STRING_LENGTH = 36;
 
 // Empty uuid - NIL calls a function / ZERO is already set
@@ -40,15 +44,15 @@ test "fromBytes" {
 }
 
 /// UUID variant or family.
-pub const Variant = enum(u2) {
+pub const Variant = enum {
     /// Legacy Apollo Network Computing System UUIDs.
-    ncs = 0,
+    ncs,
     /// RFC 4122/DCE 1.1 UUIDs, or "Leach–Salz" UUIDs.
-    rfc4122 = 1,
+    rfc4122,
     /// Backwards-compatible Microsoft COM/DCOM UUIDs.
-    microsoft = 2,
+    microsoft,
     /// Reserved for future definition UUIDs.
-    future = 3,
+    future,
 };
 
 /// Returns the UUID variant.
@@ -76,29 +80,29 @@ pub fn setVariant(uuid: *Uuid, variant: Variant) void {
 }
 
 /// UUID version or subtype.
-pub const Version = enum(u4) {
+pub const Version = enum {
     /// Version 0 is unused.
-    unused = 0,
+    unused,
     /// Version 1 is the Gregorian time-based UUID from RFC4122.
-    time_based_gregorian = 1,
+    time_based_gregorian,
     /// Version 2 is the DCE Security UUID with embedded POSIX UIDs from RFC4122.
-    dce_security = 2,
+    dce_security,
     /// Version 3 is the Name-based UUID using MD5 hashing from RFC4122.
-    name_based_md5 = 3,
+    name_based_md5,
     /// Version 4 is the UUID generated using a pseudo-randomly generated number from RFC4122.
-    random = 4,
+    random,
     /// Version 5 is the Name-based UUID using SHA-1 hashing from RFC4122.
-    name_based_sha1 = 5,
+    name_based_sha1,
     /// Version 6 is the Reordered Gregorian time-based UUID from IETF "New UUID Formats" Draft.
-    time_based_gregorian_reordered = 6,
+    time_based_gregorian_reordered,
     /// Version 7 is the Unix Epoch time-based UUID specified from IETF "New UUID Formats" Draft.
-    time_based_unix = 7,
+    time_based_unix,
     /// Version 8 is reserved for custom UUID formats from IETF "New UUID Formats" Draft.
-    custom = 8,
+    custom,
 };
 
 /// Returns the UUID version.
-pub fn getVersion(self: Uuid) Error!Version {
+pub fn getVersion(self: Uuid) !Version {
     const version_int: u4 = @truncate(self.bytes[6] >> 4);
     return try std.meta.intToEnum(Version, version_int);
 }
@@ -106,4 +110,35 @@ pub fn getVersion(self: Uuid) Error!Version {
 /// Sets the UUID version.
 pub fn setVersion(uuid: *Uuid, version: Version) void {
     uuid.bytes[6] = @as(u8, @intFromEnum(version)) << 4 | (uuid.bytes[6] & 0xF);
+}
+
+// init defaults to version-4 uuid.
+pub fn init() Uuid {
+    var prng = std.rand.DefaultPrng.init(0);
+
+    return Uuid.new_ver4_var1(prng.random());
+}
+
+pub fn new_ver4_var1(random: std.rand.Random) Uuid {
+    var uuid = Uuid{ .bytes = undefined };
+
+    random.bytes(&uuid.bytes);
+    // bun.rand(&uuid.bytes);
+
+    // Version 4
+    uuid.bytes[6] = (uuid.bytes[6] & 0x0f) | 0x40;
+    // Variant 1
+    uuid.bytes[8] = (uuid.bytes[8] & 0x3f) | 0x80;
+
+    return uuid;
+}
+
+test "version 4 var 1 test" {
+    const v4 = Uuid.init();
+
+    const v4_variant = v4.getVariant();
+    try std.testing.expect(v4_variant == Uuid.Variant.rfc4122);
+
+    const v4_version = try v4.getVersion();
+    try std.testing.expect(v4_version == Uuid.Version.random);
 }
