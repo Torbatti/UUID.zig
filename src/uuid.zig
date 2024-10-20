@@ -4,9 +4,26 @@ const assert = std.debug.assert;
 pub const Error = error{InvalidUUID};
 pub const STRING_LENGTH = 36;
 
+// Empty uuid - NIL calls a function / ZERO is already set
+pub const NIL = fromInt(0); // Nil UUID with all bits set to zero.
+pub const ZERO: Uuid = .{ .bytes = .{0} ** 16 }; // Zero UUID
+
 const Uuid = @This();
 
 bytes: [16]u8,
+
+/// Returns a UUID from a u128-bit integer.
+pub fn fromInt(int: u128) Uuid {
+    var uuid: Uuid = undefined;
+    std.mem.writeInt(u128, uuid.bytes[0..], int, .big);
+    return uuid;
+}
+
+test "fromInt" {
+    try std.testing.expectEqual([1]u8{0x0} ** 16, ZERO.bytes);
+    try std.testing.expectEqual([1]u8{0x0} ** 16, NIL.bytes);
+    try std.testing.expectEqual(ZERO.bytes, NIL.bytes);
+}
 
 /// UUID variant or family.
 pub const Variant = enum {
