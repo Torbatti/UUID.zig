@@ -16,6 +16,7 @@ bytes: [16]u8,
 pub fn fromInt(int: u128) Uuid {
     var uuid: Uuid = undefined;
     std.mem.writeInt(u128, uuid.bytes[0..], int, .big);
+
     return uuid;
 }
 
@@ -26,21 +27,19 @@ test "fromInt" {
 }
 
 /// UUID variant or family.
-pub const Variant = enum {
+pub const Variant = enum(u2) {
     /// Legacy Apollo Network Computing System UUIDs.
-    ncs,
+    ncs = 0,
     /// RFC 4122/DCE 1.1 UUIDs, or "Leach–Salz" UUIDs.
-    rfc4122,
+    rfc4122 = 1,
     /// Backwards-compatible Microsoft COM/DCOM UUIDs.
-    microsoft,
+    microsoft = 2,
     /// Reserved for future definition UUIDs.
-    future,
+    future = 3,
 };
 
 /// Returns the UUID variant.
 pub fn getVariant(self: Uuid) Variant {
-    assert(@sizeOf(self) == @sizeOf([16]u8));
-
     const byte = self.bytes[8];
     if (byte >> 7 == 0b0) {
         return .ncs;
@@ -55,8 +54,6 @@ pub fn getVariant(self: Uuid) Variant {
 
 /// Sets the UUID variant.
 pub fn setVariant(uuid: *Uuid, variant: Variant) void {
-    assert(@sizeOf(uuid.*) == @sizeOf([16]u8));
-
     uuid.bytes[8] = switch (variant) {
         .ncs => uuid.bytes[8] & 0b01111111,
         .rfc4122 => 0b10000000 | (uuid.bytes[8] & 0b00111111),
