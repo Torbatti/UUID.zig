@@ -26,6 +26,19 @@ test "fromInt" {
     try std.testing.expectEqual(ZERO.bytes, NIL.bytes);
 }
 
+/// Returns a UUID from a 16-byte slice.
+pub fn fromBytes(bytes: []const u8) Uuid {
+    assert(bytes.len == 16); // memcopy checks length as well
+
+    var uuid: Uuid = undefined;
+    @memcpy(uuid.bytes[0..], bytes);
+    return uuid;
+}
+
+test "fromBytes" {
+    try std.testing.expectEqual([1]u8{0x0} ** 16, fromBytes(&[1]u8{0x0} ** 16).bytes);
+}
+
 /// UUID variant or family.
 pub const Variant = enum(u2) {
     /// Legacy Apollo Network Computing System UUIDs.
