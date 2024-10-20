@@ -74,3 +74,36 @@ pub fn setVariant(uuid: *Uuid, variant: Variant) void {
         .future => 0b11100000 | (uuid.bytes[8] & 0b0001111),
     };
 }
+
+/// UUID version or subtype.
+pub const Version = enum(u4) {
+    /// Version 0 is unused.
+    unused = 0,
+    /// Version 1 is the Gregorian time-based UUID from RFC4122.
+    time_based_gregorian = 1,
+    /// Version 2 is the DCE Security UUID with embedded POSIX UIDs from RFC4122.
+    dce_security = 2,
+    /// Version 3 is the Name-based UUID using MD5 hashing from RFC4122.
+    name_based_md5 = 3,
+    /// Version 4 is the UUID generated using a pseudo-randomly generated number from RFC4122.
+    random = 4,
+    /// Version 5 is the Name-based UUID using SHA-1 hashing from RFC4122.
+    name_based_sha1 = 5,
+    /// Version 6 is the Reordered Gregorian time-based UUID from IETF "New UUID Formats" Draft.
+    time_based_gregorian_reordered = 6,
+    /// Version 7 is the Unix Epoch time-based UUID specified from IETF "New UUID Formats" Draft.
+    time_based_unix = 7,
+    /// Version 8 is reserved for custom UUID formats from IETF "New UUID Formats" Draft.
+    custom = 8,
+};
+
+/// Returns the UUID version.
+pub fn getVersion(self: Uuid) Error!Version {
+    const version_int: u4 = @truncate(self.bytes[6] >> 4);
+    return try std.meta.intToEnum(Version, version_int);
+}
+
+/// Sets the UUID version.
+pub fn setVersion(uuid: *Uuid, version: Version) void {
+    uuid.bytes[6] = @as(u8, @intFromEnum(version)) << 4 | (uuid.bytes[6] & 0xF);
+}
